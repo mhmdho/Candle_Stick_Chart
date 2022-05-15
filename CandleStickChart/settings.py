@@ -80,10 +80,10 @@ WSGI_APPLICATION = 'CandleStickChart.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': env('ENGINE'),
-        'NAME': env('NAME'), 
-        'USER': env('USER'), 
+        'NAME': env('NAME'),
+        'USER': env('USER'),
         'PASSWORD': env('PASSWORD'),
-        'HOST': env('HOST'), 
+        'HOST': env('HOST'),
         'PORT': env('PORT'),
     }
 }
