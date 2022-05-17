@@ -11,6 +11,8 @@ class CustomUser(AbstractUser):
     """
     Customize django user and add phone & is_phone_verified to it.
     """
+    username = ''
+    
     email = models.EmailField(_('email address'), unique=True)
     
     phone_regex = RegexValidator(regex=r'^09\d{9}$', message="Phone number must be entered in the format: '09121234567'.")
