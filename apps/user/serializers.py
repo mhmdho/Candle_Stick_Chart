@@ -37,3 +37,10 @@ class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
         # Add custom claims
         token['email'] = user.email
         return token
+
+
+class UserPhoneVerifySerializer(serializers.ModelSerializer):
+    otp = serializers.CharField(write_only=True, required=True)
+    class Meta:
+        model = CustomUser
+        fields = ('otp',)
