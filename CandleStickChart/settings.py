@@ -145,3 +145,5 @@ SWAGGER_SETTINGS = {
         }
     }
 }
+
+OTP_SECRET = env('OTP_SECRET')
