@@ -40,7 +40,7 @@ class MyObtainTokenPairView(TokenObtainPairView):
 
 class UserPhoneVerify(generics.RetrieveUpdateAPIView):
     """
-    Generates an otp and takes the otp to verify customer phone number.
+    Generates an otp and takes the otp to verify user phone number.
     """
     http_method_names = ['put', 'get']
     permission_classes = (IsAuthenticated,)
@@ -57,9 +57,9 @@ class UserPhoneVerify(generics.RetrieveUpdateAPIView):
             return Response({"Message": "Your phone have been verified before"},
                             status=status.HTTP_200_OK)
         otp = OTP(customer.phone)
-        cache.set(customer.phone, otp.totp, timeout=otp.interval)
+        cache.set(customer.phone, str(otp.totp), timeout=otp.interval)
 
-        return Response({"Verify Code": otp.totp,
+        return Response({"Verify Code": cache.get(customer.phone),
                         "Expire at": otp.expire_at},
                          status=status.HTTP_201_CREATED)
         
@@ -69,7 +69,6 @@ class UserPhoneVerify(generics.RetrieveUpdateAPIView):
         if customer.is_phone_verified:
             return Response({"Message": "Your phone have been verified before"},
                             status=status.HTTP_200_OK)
-        otp = OTP(customer.phone)
         if cache.get(customer.phone) == self.request.data['otp']:
             customer.is_phone_verified = True
             customer.save()
