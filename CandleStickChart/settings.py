@@ -147,3 +147,11 @@ SWAGGER_SETTINGS = {
 }
 
 OTP_SECRET = env('OTP_SECRET')
+
+SMS77_API_KEY = env('SMS77_API_KEY')
+
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
+        )
+}

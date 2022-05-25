@@ -21,10 +21,10 @@ class OTP:
         my_secret = re.sub(r'[^a-zA-Z2-7]', '', self.secret)[:16]
         my_token = otp.get_totp(my_secret, token_length=self.digit,
                                 interval_length=self.interval)
+        self.expire = time.time() + self.interval
         rn_token = random.randint(10000,9999999) + my_token
         return rn_token
     
     @property
     def expire_at(self):
-        expire = time.time() + self.interval
-        return datetime.fromtimestamp(expire).strftime('%Y-%b-%d %H:%M:%S')
+        return datetime.fromtimestamp(self.expire).strftime('%H:%M:%S')

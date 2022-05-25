@@ -16,8 +16,8 @@ class CustomUser(AbstractUser):
 
     email = models.EmailField(_('email address'), unique=True)
     
-    phone_regex = RegexValidator(regex=r'^09\d{9}$', message="Phone number must be entered in the format: '09121234567'.")
-    phone = models.CharField(validators=[phone_regex], max_length=11, unique=True) # validators should be a list
+    phone_regex = RegexValidator(regex=r'^\+989\d{9}$', message="Phone number must be entered in the format: '09121234567'.")
+    phone = models.CharField(validators=[phone_regex], max_length=13, unique=True) # validators should be a list
     
     last_login = models.DateTimeField(auto_now=True)
 

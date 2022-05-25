@@ -1,5 +1,6 @@
 from django.shortcuts import get_object_or_404
 from rest_framework.response import Response
+from apps.user.tasks import sms77_otp
 from apps.user.utils import OTP
 from .models import CustomUser
 from rest_framework import status
@@ -58,7 +59,10 @@ class UserPhoneVerify(generics.RetrieveUpdateAPIView):
                             status=status.HTTP_200_OK)
         otp = OTP(customer.phone)
         cache.set(customer.phone, str(otp.totp), timeout=otp.interval)
-
+        sms77_otp(customer.phone,
+                    cache.get(customer.phone),
+                    otp.expire_at
+                    )
         return Response({"Verify Code": cache.get(customer.phone),
                         "Expire at": otp.expire_at},
                          status=status.HTTP_201_CREATED)
