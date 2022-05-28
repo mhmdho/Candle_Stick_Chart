@@ -5,7 +5,7 @@ from apps.user.utils import OTP
 from .models import CustomUser
 from rest_framework import status
 from rest_framework.permissions import AllowAny, IsAuthenticated
-from .serializers import UserPhoneVerifySerializer, MyTokenObtainPairSerializer, RegisterSerializer
+from .serializers import User2FASerializer, UserPhoneVerifySerializer, MyTokenObtainPairSerializer, RegisterSerializer
 from rest_framework import generics
 from rest_framework.parsers import FormParser, MultiPartParser
 from rest_framework_simplejwt.views import TokenObtainPairView
@@ -71,12 +71,53 @@ class UserPhoneVerify(generics.RetrieveUpdateAPIView):
         super().put(request, *args, **kwargs)
         customer = get_object_or_404(CustomUser, id=self.request.user.id)
         if customer.is_phone_verified:
-            return Response({"Message": "Your phone have been verified before"},
+            return Response({"Message": "Your phone has been verified before"},
                             status=status.HTTP_200_OK)
         if cache.get(customer.phone) == self.request.data['otp']:
             customer.is_phone_verified = True
             customer.save()
             return Response({"Verified": customer.is_phone_verified},
+                            status=status.HTTP_202_ACCEPTED)
+        return Response({"Error": "Wrong OTP or expired"},
+                        status=status.HTTP_400_BAD_REQUEST)
+
+
+class User2FA(generics.RetrieveUpdateAPIView):
+    """
+    Generates a QRcode for google authenticator.
+    """
+    http_method_names = ['get', 'put']
+    permission_classes = (IsAuthenticated,)
+    serializer_class = User2FASerializer
+    parser_classes = (MultiPartParser, FormParser)
+
+    def get_object(self):
+        return get_object_or_404(CustomUser, id=self.request.user.id)
+
+    def get(self, request, *args, **kwargs):   
+        super().get(request, *args, **kwargs)
+        customer = get_object_or_404(CustomUser, id=self.request.user.id)
+        if customer.is_2FA_enabled:
+            return Response({"Message": "Your Google authenticater has been set before"},
+                            status=status.HTTP_200_OK)
+        otp = OTP(customer.phone)
+        otp.get_qrcode(customer.email)
+        customer.is_2FA_enabled = True
+        customer.save()   
+        return Response({"Verify Code": customer.is_2FA_enabled,
+                        "Expire at": otp.expire_at,
+                        "QR": otp.get_qrcode(customer.email)},
+                         status=status.HTTP_201_CREATED)
+        
+    def put(self, request, *args, **kwargs):
+        super().put(request, *args, **kwargs)
+        customer = get_object_or_404(CustomUser, id=self.request.user.id)
+        if not customer.is_2FA_enabled:
+            return Response({"Message": "Your google authenticater is not active"},
+                            status=status.HTTP_400_BAD_REQUEST)
+        otp = OTP(customer.phone)
+        if str(otp.totp) == self.request.data['otp']:
+            return Response({"Verified": True},
                             status=status.HTTP_202_ACCEPTED)
         return Response({"Error": "Wrong OTP or expired"},
                         status=status.HTTP_400_BAD_REQUEST)

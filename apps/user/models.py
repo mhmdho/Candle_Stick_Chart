@@ -27,6 +27,12 @@ class CustomUser(AbstractUser):
         help_text=_('Designates whether the phone verified.'),
     )
 
+    is_2FA_enabled = models.BooleanField(
+        _('2FA status'),
+        default=False,
+        help_text=_('Designates whether 2FA enabled.'),
+    )
+
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = ['phone']
 

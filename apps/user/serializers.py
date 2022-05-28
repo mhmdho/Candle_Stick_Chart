@@ -44,3 +44,10 @@ class UserPhoneVerifySerializer(serializers.ModelSerializer):
     class Meta:
         model = CustomUser
         fields = ('otp',)
+
+
+class User2FASerializer(serializers.ModelSerializer):
+    otp = serializers.CharField(write_only=True, required=True)
+    class Meta:
+        model = CustomUser
+        fields = ('otp',)
