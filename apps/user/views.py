@@ -58,7 +58,7 @@ class UserPhoneVerify(generics.RetrieveUpdateAPIView):
             return Response({"Message": "Your phone have been verified before"},
                             status=status.HTTP_200_OK)
         otp = OTP(customer.phone)
-        cache.set(customer.phone, str(otp.totp), timeout=otp.interval)
+        cache.set(customer.phone, otp.totp[0], timeout=otp.interval)
         sms77_otp(customer.phone,
                     cache.get(customer.phone),
                     otp.expire_at
@@ -104,11 +104,9 @@ class User2FA(generics.RetrieveUpdateAPIView):
         otp.get_qrcode(customer.email)
         customer.is_2FA_enabled = True
         customer.save()   
-        return Response({"Verify Code": customer.is_2FA_enabled,
-                        "Expire at": otp.expire_at,
-                        "QR": otp.get_qrcode(customer.email)},
+        return Response({"Google Authenticator set:": customer.is_2FA_enabled},
                          status=status.HTTP_201_CREATED)
-        
+
     def put(self, request, *args, **kwargs):
         super().put(request, *args, **kwargs)
         customer = get_object_or_404(CustomUser, id=self.request.user.id)
@@ -116,7 +114,7 @@ class User2FA(generics.RetrieveUpdateAPIView):
             return Response({"Message": "Your google authenticater is not active"},
                             status=status.HTTP_400_BAD_REQUEST)
         otp = OTP(customer.phone)
-        if str(otp.totp) == self.request.data['otp']:
+        if otp.totp[1] == self.request.data['otp']:
             return Response({"Verified": True},
                             status=status.HTTP_202_ACCEPTED)
         return Response({"Error": "Wrong OTP or expired"},

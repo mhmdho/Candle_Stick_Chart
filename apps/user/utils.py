@@ -15,16 +15,17 @@ class OTP:
         self.secret = re.sub(r'[^a-zA-Z2-7]', '',
                         phone + OTP_SECRET)[:16]
         self.digit = 6
-        self.interval = 60
+        self.interval = 30
+        self.interval_phone = 180
         self.verified = False
 
     @property
     def totp(self):
         my_token = otp.get_totp(self.secret, token_length=self.digit,
                                 interval_length=self.interval)
-        self.expire = time.time() + self.interval
-        rn_token = random.randint(10000,9999999) + my_token
-        return rn_token
+        self.expire = time.time() + self.interval_phone
+        rn_token = random.randint(100000,9999999) + my_token
+        return str(rn_token)[:6], str(my_token).zfill(6)
     
     @property
     def expire_at(self):
