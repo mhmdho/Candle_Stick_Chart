@@ -10,6 +10,8 @@ from rest_framework import generics
 from rest_framework.parsers import FormParser, MultiPartParser
 from rest_framework_simplejwt.views import TokenObtainPairView
 from django.core.cache import cache
+from django.core.mail import send_mail
+from CandleStickChart.settings import DEAFULT_EMAIL_USER
 
 
 # Create your views here.
@@ -55,10 +57,10 @@ class UserPhoneVerify(generics.RetrieveUpdateAPIView):
         super().get(request, *args, **kwargs)
         customer = get_object_or_404(CustomUser, id=self.request.user.id)
         if customer.is_phone_verified:
-            return Response({"Message": "Your phone have been verified before"},
+            return Response({"Message": "Your phone has been verified before"},
                             status=status.HTTP_200_OK)
         otp = OTP(customer.phone)
-        cache.set(customer.phone, otp.totp[0], timeout=otp.interval)
+        cache.set(customer.phone, otp.totp[0], timeout=otp.interval_phone)
         sms77_otp(customer.phone,
                     cache.get(customer.phone),
                     otp.expire_at
@@ -116,6 +118,61 @@ class User2FA(generics.RetrieveUpdateAPIView):
         otp = OTP(customer.phone)
         if otp.totp[1] == self.request.data['otp']:
             return Response({"Verified": True},
+                            status=status.HTTP_202_ACCEPTED)
+        return Response({"Error": "Wrong OTP or expired"},
+                        status=status.HTTP_400_BAD_REQUEST)
+
+
+class UserEmailVerify(generics.RetrieveUpdateAPIView):
+    """
+    Generates an otp and takes the otp to verify user email.
+    """
+    http_method_names = ['put', 'get']
+    permission_classes = (IsAuthenticated,)
+    serializer_class = UserPhoneVerifySerializer
+    parser_classes = (MultiPartParser, FormParser)
+
+    def get_object(self):
+        return get_object_or_404(CustomUser, id=self.request.user.id)
+
+    def get(self, request, *args, **kwargs):   
+        super().get(request, *args, **kwargs)
+        customer = get_object_or_404(CustomUser, id=self.request.user.id)
+        if customer.is_email_verified:
+            return Response({"Message": "Your email has been verified before"},
+                            status=status.HTTP_200_OK)
+        otp = OTP(customer.email)
+        cache.set(customer.email, otp.totp[0], timeout=otp.interval_phone)
+        msg_t = f'[TradingHills] Verification Code: {cache.get(customer.email)}'
+        msg_c = f'\n\nConfirm Your Email \
+                \n\nWelcome to TradingHills! \
+                \nHere is your Email confirmation code: \
+                \n \
+                \n{cache.get(customer.email)} \
+                \n(Expire at: {otp.expire_at}) \
+                \n \
+                \nTradingHills Developer Team \
+                \nThis is an automated message, please do not reply.'
+        send_mail(msg_t,
+                msg_c,
+                DEAFULT_EMAIL_USER,
+                [customer.email],
+                fail_silently=False
+                )
+        return Response({"Verify Code": cache.get(customer.email),
+                        "Expire at": otp.expire_at},
+                         status=status.HTTP_201_CREATED)
+        
+    def put(self, request, *args, **kwargs):
+        super().put(request, *args, **kwargs)
+        customer = get_object_or_404(CustomUser, id=self.request.user.id)
+        if customer.is_email_verified:
+            return Response({"Message": "Your email has been verified before"},
+                            status=status.HTTP_200_OK)
+        if cache.get(customer.email) == self.request.data['otp']:
+            customer.is_email_verified = True
+            customer.save()
+            return Response({"Verified": customer.is_email_verified},
                             status=status.HTTP_202_ACCEPTED)
         return Response({"Error": "Wrong OTP or expired"},
                         status=status.HTTP_400_BAD_REQUEST)
