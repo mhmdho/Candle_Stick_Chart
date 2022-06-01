@@ -1,7 +1,7 @@
 from django.shortcuts import get_object_or_404
 from rest_framework.response import Response
 from apps.user.tasks import sms77_otp
-from apps.user.utils import OTP
+from apps.user.utils import OTP, MailVerification
 from .models import CustomUser
 from rest_framework import status
 from rest_framework.permissions import AllowAny, IsAuthenticated
@@ -10,8 +10,6 @@ from rest_framework import generics
 from rest_framework.parsers import FormParser, MultiPartParser
 from rest_framework_simplejwt.views import TokenObtainPairView
 from django.core.cache import cache
-from django.core.mail import send_mail
-from CandleStickChart.settings import DEAFULT_EMAIL_USER
 
 
 # Create your views here.
@@ -143,22 +141,9 @@ class UserEmailVerify(generics.RetrieveUpdateAPIView):
                             status=status.HTTP_200_OK)
         otp = OTP(customer.email)
         cache.set(customer.email, otp.totp[0], timeout=otp.interval_phone)
-        msg_t = f'[TradingHills] Verification Code: {cache.get(customer.email)}'
-        msg_c = f'\n\nConfirm Your Email \
-                \n\nWelcome to TradingHills! \
-                \nHere is your Email confirmation code: \
-                \n \
-                \n{cache.get(customer.email)} \
-                \n(Expire at: {otp.expire_at}) \
-                \n \
-                \nTradingHills Developer Team \
-                \nThis is an automated message, please do not reply.'
-        send_mail(msg_t,
-                msg_c,
-                DEAFULT_EMAIL_USER,
-                [customer.email],
-                fail_silently=False
-                )
+        email_verify = MailVerification('tradinghillsdev@gmail.com', cache.get(customer.email))
+        email_verify.email_send()
+
         return Response({"Verify Code": cache.get(customer.email),
                         "Expire at": otp.expire_at},
                          status=status.HTTP_201_CREATED)
